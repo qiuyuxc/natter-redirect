@@ -1,0 +1,13 @@
+# 复制为 wrangler.toml 后填写真实 id
+name = "natter-redirect"
+main = "worker.js"
+compatibility_date = "2025-01-01"
+
+[[kv_namespaces]]
+binding = "KV"
+id = "<wrangler kv namespace create natter-addr 返回的 id>"
+
+# 自定义域名（域名需在同一账号下）
+routes = [
+  { pattern = "nat.example.com", custom_domain = true }
+]
