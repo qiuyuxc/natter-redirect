@@ -40,6 +40,13 @@ function safeEqual(a, b) {
   return diff === 0;
 }
 
+// 没配 SECRET 时一律拒绝：否则空串和空串相等，等于没有鉴权
+function authorized(request, env) {
+  const secret = env.SECRET;
+  if (typeof secret !== "string" || secret.length < 16) return false;
+  return safeEqual(request.headers.get("x-auth") || "", secret);
+}
+
 async function readAddr(env) {
   const raw = await env.KV.get(KEY);
   if (!raw) return { addr: null, ts: 0 };
@@ -57,17 +64,16 @@ export default {
     // 上报：POST /_nat/update  body: "1.2.3.4:5678"  header: x-auth: <SECRET>
     if (url.pathname === "/_nat/update") {
       if (request.method !== "POST") return json({ error: "method not allowed" }, 405);
-      if (!safeEqual(request.headers.get("x-auth") || "", env.SECRET || "")) {
-        return json({ error: "unauthorized" }, 401);
-      }
+      if (!authorized(request, env)) return json({ error: "unauthorized" }, 401);
       const addr = (await request.text()).trim();
       if (!validAddr(addr)) return json({ error: "bad address" }, 400);
       await env.KV.put(KEY, JSON.stringify({ addr, ts: Date.now() }));
       return new Response("ok " + addr + "\n", { headers: { "cache-control": "no-store" } });
     }
 
-    // 查询：GET /_nat/status
+    // 查询：GET /_nat/status（同样要鉴权，别把当前地址白送）
     if (url.pathname === "/_nat/status") {
+      if (!authorized(request, env)) return json({ error: "unauthorized" }, 401);
       return json(await readAddr(env));
     }
 

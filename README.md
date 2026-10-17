@@ -33,7 +33,7 @@ Natter 通过 STUN 打洞拿到的公网端口，会随 PPPoE 重拨、CGNAT 映
 1. 打开 Cloudflare 控制台 → Workers & Pages → 创建 Worker
 2. 粘贴 `worker.js`
 3. 创建 KV namespace（比如 `natter-addr`），在 Worker 的 Settings → Variables 里绑定为 **KV**
-4. 添加 Secret：名称 **SECRET**，值用一条长随机串（`openssl rand -hex 24`）
+4. 添加 Secret：名称 **SECRET**，值用一条长随机串（`openssl rand -hex 24`）——不配的话 Worker 会拒绝所有请求
 5. Settings → Domains & Routes → 添加自定义域名
 
 ### 方式二：wrangler
@@ -75,12 +75,13 @@ python3 natter.py -p 8080 -k 60 -q -e ./notify.sh
 | 方法 | 路径 | 说明 |
 |---|---|---|
 | POST | `/_nat/update` | 请求头 `x-auth: <SECRET>`，body 为 `IP:PORT`，写入 KV |
-| GET | `/_nat/status` | 返回 `{"addr":"1.2.3.4:5678","ts":1700000000000}` |
+| GET | `/_nat/status` | 请求头 `x-auth: <SECRET>`，返回 `{"addr":"1.2.3.4:5678","ts":1700000000000}` |
 | GET | `/*` | 302 到当前地址，保留 path 和 query；没上报过返回 503 |
 
 ## 注意
 
 - **SECRET 泄露 = 别人能把你的域名指向任意 IP**。用长随机串，别复用。
+- 没配 SECRET（或短于 16 位）时 Worker 拒绝一切读写，不会退化成"谁都能改"。
 - KV 是最终一致的，写入后各地生效有几秒延迟，属正常。
 - 跳转目标是 `http://`，因为 Natter 穿的是裸 TCP，没有 TLS。要 HTTPS 得在设备侧自己加反代。
 - Worker 的免费额度（10 万次/天）对这种用法绰绰有余。
