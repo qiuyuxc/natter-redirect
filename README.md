@@ -4,6 +4,8 @@
 
 Cloudflare Worker + KV，一个文件，零依赖。访问 `https://your.domain` 会 302 到设备当前上报的地址，保留 path 和 query。
 
+> 配套项目：[openlist-nat](https://github.com/qiuyuxc/openlist-nat) —— 把 OpenList 和 Natter 打洞打包成 Android 模块，本仓库是它的可选组件，负责给会变的地址一个固定入口。
+
 ## 为什么需要它
 
 Natter 通过 STUN 打洞拿到的公网端口，会随 PPPoE 重拨、CGNAT 映射回收而变化。DNS 只能存 IP，存不了端口，所以直接改 A 记录不够用。
